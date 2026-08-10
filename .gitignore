@@ -1,0 +1,27 @@
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+
+# Android build
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Node
+backend/node_modules/
+
+# Environment variables
+.env
+backend/.env
+
+# Logs
+*.log
