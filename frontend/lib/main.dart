@@ -16,14 +16,16 @@ class WhatsForDinnerApp extends StatelessWidget {
     return MaterialApp(
       title: "What's for Dinner?",
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
       home: const RootShell(),
     );
   }
 }
 
 /// Bottom-nav shell for the Phase 1 MVP: Home and My Kitchen.
-/// (Favorites / Planner / Profile tabs come in Version 2+ — see project spec.)
+/// Fully offline — everything runs from in-memory mock data, no backend.
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
 
