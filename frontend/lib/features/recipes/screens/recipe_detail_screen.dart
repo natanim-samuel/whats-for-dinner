@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/recipe_provider.dart';
+import '../../kitchen/providers/kitchen_provider.dart';
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   final int recipeId;
