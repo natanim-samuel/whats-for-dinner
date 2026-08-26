@@ -9,8 +9,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kitchenAsync = ref.watch(kitchenProvider);
-    final ingredientCount = kitchenAsync.value?.length ?? 0;
+    final ingredientCount = ref.watch(kitchenProvider).length;
 
     return Scaffold(
       appBar: AppBar(title: const Text("What's for Dinner? 🍳")),
@@ -20,37 +19,34 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Good evening 👋', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text('Good evening 👋',
+                  style: TextStyle(color: AppColors.textLight, fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text(
                 ingredientCount > 0
                     ? 'You have $ingredientCount ingredients in your kitchen.'
                     : 'Add ingredients to your kitchen to get started.',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 15),
+                style: const TextStyle(color: AppColors.textLightMuted, fontSize: 15),
               ),
               const SizedBox(height: 28),
               Card(
-                color: AppColors.primary,
+                color: AppColors.card,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('🍳 Cook With My Ingredients',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+                          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 17)),
                       const SizedBox(height: 6),
                       const Text(
                         "We'll find recipes ranked by how much of your kitchen they use.",
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: AppColors.textDarkMuted, fontSize: 13),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppColors.primary,
-                          ),
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => const DinnerResultsScreen()),

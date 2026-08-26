@@ -1,102 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/data/models.dart';
 import '../../../core/theme/app_theme.dart';
-import '../models/kitchen_ingredient.dart';
 import '../providers/kitchen_provider.dart';
 
 class KitchenScreen extends ConsumerWidget {
   const KitchenScreen({super.key});
 
-  static const categoryIcons = {
-    'Vegetables': '🥬',
-    'Protein': '🥩',
-    'Grains': '🌾',
-    'Other': '🧂',
-  };
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kitchenAsync = ref.watch(kitchenProvider);
+    final items = ref.watch(kitchenProvider);
+
+    final byCategory = <String, List<KitchenItem>>{};
+    for (final item in items) {
+      byCategory.putIfAbsent(item.category, () => []).add(item);
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Kitchen')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddIngredientSheet(context, ref),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Ingredient', style: TextStyle(color: Colors.white)),
+        onPressed: () => _showAddIngredientSheet(context),
+        backgroundColor: AppColors.accent,
+        icon: const Icon(Icons.add, color: AppColors.textDark),
+        label: const Text('Add Ingredient', style: TextStyle(color: AppColors.textDark)),
       ),
-      body: kitchenAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, st) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.wifi_off, size: 40, color: AppColors.textMuted),
-                const SizedBox(height: 12),
-                Text('Could not load your kitchen.\n$err', textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => ref.read(kitchenProvider.notifier).fetchKitchen(),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+      body: items.isEmpty
+          ? const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('🥕', style: TextStyle(fontSize: 48)),
+              SizedBox(height: 12),
+              Text(
+                'Your kitchen is empty.\nAdd a few ingredients to get started.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textLightMuted),
+              ),
+            ],
           ),
         ),
-        data: (items) {
-          if (items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text('🥕', style: TextStyle(fontSize: 48)),
-                    SizedBox(height: 12),
-                    Text(
-                      'Your kitchen is empty.\nAdd a few ingredients to get started.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final byCategory = <String, List<KitchenIngredient>>{};
-          for (final item in items) {
-            byCategory.putIfAbsent(item.category, () => []).add(item);
-          }
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-            children: byCategory.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${categoryIcons[entry.key] ?? '🧂'}  ${entry.key}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    const SizedBox(height: 8),
-                    ...entry.value.map((ingredient) => _IngredientTile(ingredient: ingredient)),
-                  ],
-                ),
-              );
-            }).toList(),
+      )
+          : ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        children: byCategory.entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.key,
+                    style: const TextStyle(
+                        color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 8),
+                ...entry.value.map((item) => _IngredientTile(item: item)),
+              ],
+            ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  void _showAddIngredientSheet(BuildContext context, WidgetRef ref) {
+  void _showAddIngredientSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -107,25 +74,28 @@ class KitchenScreen extends ConsumerWidget {
 }
 
 class _IngredientTile extends ConsumerWidget {
-  final KitchenIngredient ingredient;
-  const _IngredientTile({required this.ingredient});
+  final KitchenItem item;
+  const _IngredientTile({required this.item});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(_capitalize(ingredient.name)),
-        subtitle: Text('${ingredient.quantity} ${ingredient.unit}'),
+        leading: CircleAvatar(
+          backgroundColor: AppColors.card,
+          child: Text(item.icon, style: const TextStyle(fontSize: 16)),
+        ),
+        title: Text(item.name, style: const TextStyle(color: AppColors.textLight)),
+        subtitle: Text('${item.quantity} ${item.unit}',
+            style: const TextStyle(color: AppColors.textLightMuted)),
         trailing: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textMuted),
-          onPressed: () => ref.read(kitchenProvider.notifier).removeIngredient(ingredient.ingredientId),
+          icon: const Icon(Icons.close, color: AppColors.textLightMuted),
+          onPressed: () => ref.read(kitchenProvider.notifier).removeItem(item.name),
         ),
       ),
     );
   }
-
-  String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
 class _AddIngredientSheet extends ConsumerStatefulWidget {
@@ -140,14 +110,15 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
   String _category = 'Vegetables';
   double _quantity = 1;
   String _unit = 'pieces';
-  bool _saving = false;
+  String _icon = '🥕';
 
   static const categories = ['Vegetables', 'Protein', 'Grains', 'Other'];
-  static const units = ['pieces', 'cup', 'g', 'kg', 'tbsp', 'tsp', 'lb', 'ml'];
+  static const units = ['pieces', 'cup', 'g', 'kg', 'tbsp', 'tsp', 'lb', 'ml', 'head', 'cloves'];
 
-  static const quickAdd = [
-    'Tomato', 'Onion', 'Garlic', 'Egg', 'Rice', 'Chicken', 'Pasta', 'Potato',
-  ];
+  static const quickAdd = {
+    'Tomato': '🍅', 'Onion': '🧅', 'Garlic': '🧄', 'Egg': '🥚',
+    'Rice': '🍚', 'Chicken breast': '🍗', 'Pasta': '🍝', 'Potato': '🥔',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -157,27 +128,33 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add Ingredient', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Add Ingredient',
+              style: TextStyle(color: AppColors.textLight, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
+            style: const TextStyle(color: AppColors.textLight),
             decoration: const InputDecoration(hintText: 'e.g. Tomato'),
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: quickAdd.map((name) {
+            children: quickAdd.entries.map((entry) {
               return ActionChip(
-                label: Text(name),
-                onPressed: () => setState(() => _nameController.text = name),
+                backgroundColor: AppColors.background,
+                label: Text('${entry.value} ${entry.key}', style: const TextStyle(color: AppColors.textLight)),
+                onPressed: () => setState(() {
+                  _nameController.text = entry.key;
+                  _icon = entry.value;
+                }),
               );
             }).toList(),
           ),
@@ -187,6 +164,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _category,
+                  dropdownColor: AppColors.backgroundElevated,
+                  style: const TextStyle(color: AppColors.textLight),
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: categories
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -198,6 +177,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _unit,
+                  dropdownColor: AppColors.backgroundElevated,
+                  style: const TextStyle(color: AppColors.textLight),
                   decoration: const InputDecoration(labelText: 'Unit'),
                   items: units
                       .map((u) => DropdownMenuItem(value: u, child: Text(u)))
@@ -210,15 +191,16 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Quantity'),
+              const Text('Quantity', style: TextStyle(color: AppColors.textLight)),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.remove_circle_outline),
+                icon: const Icon(Icons.remove_circle_outline, color: AppColors.textLight),
                 onPressed: () => setState(() => _quantity = (_quantity - 1).clamp(1, 999)),
               ),
-              Text(_quantity.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(_quantity.toStringAsFixed(0),
+                  style: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold)),
               IconButton(
-                icon: const Icon(Icons.add_circle_outline),
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.textLight),
                 onPressed: () => setState(() => _quantity += 1),
               ),
             ],
@@ -227,13 +209,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _saving ? null : _submit,
-              child: _saving
-                  ? const SizedBox(
-                      height: 18, width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Add'),
+              onPressed: _submit,
+              child: const Text('Add'),
             ),
           ),
         ],
@@ -241,24 +218,18 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     );
   }
 
-  Future<void> _submit() async {
+  void _submit() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
-    setState(() => _saving = true);
-    try {
-      await ref.read(kitchenProvider.notifier).addIngredient(
-            name: name,
-            category: _category,
-            quantity: _quantity,
-            unit: _unit,
-          );
-      if (mounted) Navigator.of(context).pop();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add ingredient: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    ref.read(kitchenProvider.notifier).addItem(
+      KitchenItem(
+        name: name,
+        icon: _icon,
+        category: _category,
+        quantity: _quantity,
+        unit: _unit,
+      ),
+    );
+    Navigator.of(context).pop();
   }
 }

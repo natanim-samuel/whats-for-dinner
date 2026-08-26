@@ -1,57 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
-import '../models/kitchen_ingredient.dart';
+import '../../../core/data/models.dart';
 
-final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+/// The user's kitchen, held entirely in memory. No backend, no persistence
+/// (yet) — this is deliberately simple for the offline MVP.
+class KitchenNotifier extends StateNotifier<List<KitchenItem>> {
+  KitchenNotifier() : super(_starterItems);
 
-/// Holds the user's current kitchen contents and talks to the backend.
-class KitchenNotifier extends StateNotifier<AsyncValue<List<KitchenIngredient>>> {
-  final ApiClient _api;
-  KitchenNotifier(this._api) : super(const AsyncValue.loading()) {
-    fetchKitchen();
-  }
+  static const _starterItems = <KitchenItem>[
+    KitchenItem(name: 'Egg', icon: '🥚', category: 'Protein', quantity: 6, unit: 'pcs'),
+    KitchenItem(name: 'Onion', icon: '🧅', category: 'Vegetables', quantity: 2, unit: 'pcs'),
+    KitchenItem(name: 'Garlic', icon: '🧄', category: 'Vegetables', quantity: 1, unit: 'head'),
+    KitchenItem(name: 'Rice', icon: '🍚', category: 'Grains', quantity: 1, unit: 'kg'),
+  ];
 
-  Future<void> fetchKitchen() async {
-    state = const AsyncValue.loading();
-    try {
-      final response = await _api.get('/kitchen');
-      final items = (response['kitchen'] as List)
-          .map((e) => KitchenIngredient.fromJson(e as Map<String, dynamic>))
-          .toList();
-      state = AsyncValue.data(items);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+  void addItem(KitchenItem item) {
+    final existingIndex = state.indexWhere((i) => i.key == item.key);
+    if (existingIndex >= 0) {
+      final updated = [...state];
+      updated[existingIndex] = item;
+      state = updated;
+    } else {
+      state = [...state, item];
     }
   }
 
-  Future<void> addIngredient({
-    required String name,
-    String category = 'Other',
-    num quantity = 1,
-    String unit = 'pieces',
-    String? expirationDate,
-  }) async {
-    await _api.post('/kitchen', {
-      'name': name,
-      'category': category,
-      'quantity': quantity,
-      'unit': unit,
-      if (expirationDate != null) 'expirationDate': expirationDate,
-    });
-    await fetchKitchen();
+  void removeItem(String name) {
+    state = state.where((i) => i.key != name.toLowerCase().trim()).toList();
   }
 
-  Future<void> removeIngredient(int ingredientId) async {
-    await _api.delete('/kitchen/$ingredientId');
-    await fetchKitchen();
-  }
-
-  /// All ingredient IDs currently in the kitchen — used to request matches.
-  List<int> get ingredientIds =>
-      state.value?.map((e) => e.ingredientId).toList() ?? [];
+  Set<String> get keys => state.map((i) => i.key).toSet();
 }
 
-final kitchenProvider =
-    StateNotifierProvider<KitchenNotifier, AsyncValue<List<KitchenIngredient>>>(
-  (ref) => KitchenNotifier(ref.watch(apiClientProvider)),
+final kitchenProvider = StateNotifierProvider<KitchenNotifier, List<KitchenItem>>(
+      (ref) => KitchenNotifier(),
 );
+
+/// Just the set of ingredient keys currently in the kitchen — handy for
+/// screens (like recipe detail) that only need fast lookups, not the full list.
+final kitchenProviderKeysProvider = Provider<Set<String>>((ref) {
+  return ref.watch(kitchenProvider).map((i) => i.key).toSet();
+});
