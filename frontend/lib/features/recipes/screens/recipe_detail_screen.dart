@@ -1,55 +1,141 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/data/models.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../favorites/providers/favorites_provider.dart';
 import '../providers/recipe_provider.dart';
 import '../../kitchen/providers/kitchen_provider.dart';
 
-class RecipeDetailScreen extends ConsumerStatefulWidget {
+class RecipeDetailScreen extends ConsumerWidget {
   final int recipeId;
-  const RecipeDetailScreen({super.key, required this.recipeId});
+
+  const RecipeDetailScreen({
+    super.key,
+    required this.recipeId,
+  });
 
   @override
-  ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
-}
+  Widget build(
+      BuildContext context,
+      WidgetRef ref,
+      ) {
+    final recipe =
+    ref.watch(recipeByIdProvider(recipeId));
 
-class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
-  bool _saved = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final recipe = ref.watch(recipeByIdProvider(widget.recipeId));
+    final isFavorite = ref.watch(
+      favoritesProvider.select(
+            (favorites) => favorites.contains(recipeId),
+      ),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            32,
+          ),
+
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
-              _TopBar(onSave: () => setState(() => _saved = !_saved), saved: _saved),
+              // ------------------------------------------------
+              // TOP BAR
+              // ------------------------------------------------
+              _TopBar(
+                saved: isFavorite,
+                onSave: () {
+                  ref
+                      .read(
+                    favoritesProvider.notifier,
+                  )
+                      .toggleFavorite(recipeId);
+                },
+              ),
+
               const SizedBox(height: 12),
-              _RecipeImage(imageUrl: recipe.imageUrl),
+
+              // ------------------------------------------------
+              // IMAGE
+              // ------------------------------------------------
+              _RecipeImage(
+                imageUrl: recipe.imageUrl,
+              ),
+
               const SizedBox(height: 20),
-              Text(recipe.name,
-                  style: const TextStyle(
-                      color: AppColors.textLight, fontSize: 26, fontWeight: FontWeight.bold)),
+
+              // ------------------------------------------------
+              // TITLE
+              // ------------------------------------------------
+              Text(
+                recipe.name,
+                style: const TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               const SizedBox(height: 12),
+
+              // ------------------------------------------------
+              // META
+              // ------------------------------------------------
               _MetaRow(recipe: recipe),
+
               const SizedBox(height: 20),
-              _IngredientChipsRow(ingredients: recipe.ingredients),
+
+              // ------------------------------------------------
+              // INGREDIENT CHIPS
+              // ------------------------------------------------
+              _IngredientChipsRow(
+                ingredients: recipe.ingredients,
+              ),
+
               const SizedBox(height: 24),
-              const Text('Ingredients',
-                  style: TextStyle(color: AppColors.textLight, fontSize: 18, fontWeight: FontWeight.bold)),
+
+              const Text(
+                'Ingredients',
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               const SizedBox(height: 10),
-              _IngredientListCard(ingredients: recipe.ingredients),
+
+              _IngredientListCard(
+                ingredients: recipe.ingredients,
+              ),
+
               const SizedBox(height: 24),
-              const Text('Instructions',
-                  style: TextStyle(color: AppColors.textLight, fontSize: 18, fontWeight: FontWeight.bold)),
+
+              const Text(
+                'Instructions',
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               const SizedBox(height: 12),
-              ...recipe.instructions.asMap().entries.map(
-                    (entry) => _InstructionStep(number: entry.key + 1, text: entry.value),
+
+              ...recipe.instructions
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => _InstructionStep(
+                  number: entry.key + 1,
+                  text: entry.value,
+                ),
               ),
             ],
           ),
@@ -59,20 +145,38 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 }
 
+// ============================================================
+// TOP BAR
+// ============================================================
+
 class _TopBar extends StatelessWidget {
   final VoidCallback onSave;
   final bool saved;
-  const _TopBar({required this.onSave, required this.saved});
+
+  const _TopBar({
+    required this.onSave,
+    required this.saved,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment:
+      MainAxisAlignment.spaceBetween,
       children: [
-        _RoundIconButton(icon: Icons.arrow_back, onTap: () => Navigator.of(context).pop()),
         _RoundIconButton(
-          icon: saved ? Icons.star : Icons.star_border,
-          iconColor: saved ? AppColors.accent : AppColors.textLight,
+          icon: Icons.arrow_back,
+          onTap: () =>
+              Navigator.of(context).pop(),
+        ),
+
+        _RoundIconButton(
+          icon: saved
+              ? Icons.bookmark
+              : Icons.bookmark_border,
+          iconColor: saved
+              ? AppColors.accent
+              : AppColors.textLight,
           onTap: onSave,
         ),
       ],
@@ -80,11 +184,20 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+// ============================================================
+// ROUND ICON BUTTON
+// ============================================================
+
 class _RoundIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color iconColor;
-  const _RoundIconButton({required this.icon, required this.onTap, this.iconColor = AppColors.textLight});
+
+  const _RoundIconButton({
+    required this.icon,
+    required this.onTap,
+    this.iconColor = AppColors.textLight,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -98,15 +211,26 @@ class _RoundIconButton extends StatelessWidget {
           color: AppColors.backgroundElevated,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Icon(icon, color: iconColor, size: 20),
+        child: Icon(
+          icon,
+          color: iconColor,
+          size: 20,
+        ),
       ),
     );
   }
 }
 
+// ============================================================
+// RECIPE IMAGE
+// ============================================================
+
 class _RecipeImage extends StatelessWidget {
   final String imageUrl;
-  const _RecipeImage({required this.imageUrl});
+
+  const _RecipeImage({
+    required this.imageUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -117,9 +241,15 @@ class _RecipeImage extends StatelessWidget {
         child: Image.network(
           '$imageUrl?w=800&q=70',
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            color: AppColors.backgroundElevated,
-            child: const Icon(Icons.restaurant, color: AppColors.accent, size: 40),
+          errorBuilder:
+              (_, __, ___) => Container(
+            color:
+            AppColors.backgroundElevated,
+            child: const Icon(
+              Icons.restaurant,
+              color: AppColors.accent,
+              size: 40,
+            ),
           ),
         ),
       ),
@@ -127,19 +257,40 @@ class _RecipeImage extends StatelessWidget {
   }
 }
 
+// ============================================================
+// META ROW
+// ============================================================
+
 class _MetaRow extends StatelessWidget {
   final Recipe recipe;
-  const _MetaRow({required this.recipe});
+
+  const _MetaRow({
+    required this.recipe,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _MetaItem(icon: Icons.access_time, label: '${recipe.cookingTimeMinutes} mins'),
+        _MetaItem(
+          icon: Icons.access_time,
+          label:
+          '${recipe.cookingTimeMinutes} mins',
+        ),
+
         const SizedBox(width: 20),
-        _MetaItem(icon: Icons.local_fire_department, label: '${recipe.calories} kcal'),
+
+        _MetaItem(
+          icon: Icons.local_fire_department,
+          label: '${recipe.calories} kcal',
+        ),
+
         const SizedBox(width: 20),
-        _MetaItem(icon: Icons.restaurant, label: '${recipe.servings} serves'),
+
+        _MetaItem(
+          icon: Icons.restaurant,
+          label: '${recipe.servings} serves',
+        ),
       ],
     );
   }
@@ -148,44 +299,93 @@ class _MetaRow extends StatelessWidget {
 class _MetaItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _MetaItem({required this.icon, required this.label});
+
+  const _MetaItem({
+    required this.icon,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 15, color: AppColors.textLightMuted),
+        Icon(
+          icon,
+          size: 15,
+          color: AppColors.textLightMuted,
+        ),
+
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(color: AppColors.textLightMuted, fontSize: 13)),
+
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textLightMuted,
+            fontSize: 13,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _IngredientChipsRow extends StatelessWidget {
+// ============================================================
+// INGREDIENT CHIPS
+// ============================================================
+
+class _IngredientChipsRow
+    extends StatelessWidget {
   final List<RecipeIngredient> ingredients;
-  const _IngredientChipsRow({required this.ingredients});
+
+  const _IngredientChipsRow({
+    required this.ingredients,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+        BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          const Text('Ingredients',
-              style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700, fontSize: 14)),
+          const Text(
+            'Ingredients',
+            style: TextStyle(
+              color: AppColors.textDark,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+
           const Spacer(),
-          ...ingredients.take(5).map(
-                (i) => Padding(
-              padding: const EdgeInsets.only(left: 4),
+
+          ...ingredients
+              .take(5)
+              .map(
+                (ingredient) => Padding(
+              padding:
+              const EdgeInsets.only(
+                left: 4,
+              ),
               child: CircleAvatar(
                 radius: 15,
-                backgroundColor: AppColors.cardAlt,
-                child: Text(i.icon, style: const TextStyle(fontSize: 14)),
+                backgroundColor:
+                AppColors.cardAlt,
+                child: Text(
+                  ingredient.icon,
+                  style:
+                  const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ),
           ),
@@ -195,83 +395,183 @@ class _IngredientChipsRow extends StatelessWidget {
   }
 }
 
-class _IngredientListCard extends ConsumerWidget {
+// ============================================================
+// INGREDIENT LIST
+// ============================================================
+
+class _IngredientListCard
+    extends ConsumerWidget {
   final List<RecipeIngredient> ingredients;
-  const _IngredientListCard({required this.ingredients});
+
+  const _IngredientListCard({
+    required this.ingredients,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final kitchen = ref.watch(kitchenProvider);
+  Widget build(
+      BuildContext context,
+      WidgetRef ref,
+      ) {
+    final kitchen =
+    ref.watch(kitchenProvider);
+
+    final kitchenKeys = kitchen
+        .map((item) => item.key)
+        .toSet();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+        BorderRadius.circular(20),
       ),
       child: Column(
-        children: ingredients.map((ingredient) {
-          final have = kitchen.contains(ingredient.name.toLowerCase().trim());
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.cardAlt,
-                  child: Text(ingredient.icon, style: const TextStyle(fontSize: 15)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    ingredient.name + (ingredient.required ? '' : '  (optional)'),
-                    style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w500),
+        children: ingredients
+            .map(
+              (ingredient) {
+            final have =
+            kitchenKeys.contains(
+              ingredient.name
+                  .toLowerCase()
+                  .trim(),
+            );
+
+            return Padding(
+              padding:
+              const EdgeInsets.symmetric(
+                vertical: 8,
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor:
+                    AppColors.cardAlt,
+                    child: Text(
+                      ingredient.icon,
+                      style:
+                      const TextStyle(
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  '${_formatQty(ingredient.quantity)} ${ingredient.unit}',
-                  style: const TextStyle(color: AppColors.textDarkMuted, fontSize: 12),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  have ? Icons.check_circle : Icons.remove_circle_outline,
-                  size: 18,
-                  color: have ? AppColors.success : AppColors.missing,
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Text(
+                      ingredient.name +
+                          (ingredient.required
+                              ? ''
+                              : '  (optional)'),
+                      style:
+                      const TextStyle(
+                        color:
+                        AppColors.textDark,
+                        fontWeight:
+                        FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  Text(
+                    '${_formatQty(ingredient.quantity)} '
+                        '${ingredient.unit}',
+                    style:
+                    const TextStyle(
+                      color:
+                      AppColors.textDarkMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Icon(
+                    have
+                        ? Icons.check_circle
+                        : Icons
+                        .remove_circle_outline,
+                    size: 18,
+                    color: have
+                        ? AppColors.success
+                        : AppColors.missing,
+                  ),
+                ],
+              ),
+            );
+          },
+        )
+            .toList(),
       ),
     );
   }
 
-  String _formatQty(num q) => q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+  String _formatQty(num quantity) {
+    return quantity ==
+        quantity.roundToDouble()
+        ? quantity.toInt().toString()
+        : quantity.toString();
+  }
 }
 
-class _InstructionStep extends StatelessWidget {
+// ============================================================
+// INSTRUCTION STEP
+// ============================================================
+
+class _InstructionStep
+    extends StatelessWidget {
   final int number;
   final String text;
-  const _InstructionStep({required this.number, required this.text});
+
+  const _InstructionStep({
+    required this.number,
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding:
+      const EdgeInsets.only(bottom: 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Container(
             width: 26,
             height: 26,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
-            child: Text('$number',
-                style: const TextStyle(color: AppColors.textDark, fontSize: 12, fontWeight: FontWeight.bold)),
+            decoration:
+            const BoxDecoration(
+              color: AppColors.accent,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
-            child: Text(text, style: const TextStyle(color: AppColors.textLight, height: 1.4)),
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textLight,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
