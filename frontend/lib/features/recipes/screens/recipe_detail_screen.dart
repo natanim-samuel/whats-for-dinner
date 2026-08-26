@@ -201,7 +201,7 @@ class _IngredientListCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kitchen = ref.watch(kitchenProviderKeysProvider);
+    final kitchen = ref.watch(kitchenProvider);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

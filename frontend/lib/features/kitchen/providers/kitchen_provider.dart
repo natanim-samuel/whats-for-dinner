@@ -1,42 +1,345 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/models.dart';
 
-/// The user's kitchen, held entirely in memory. No backend, no persistence
-/// (yet) — this is deliberately simple for the offline MVP.
+/// Common ingredients that the user can select from.
+///
+/// Keeping the names standardized is important because recipe matching
+/// depends on ingredient names matching the recipe database.
+class IngredientOption {
+  final String name;
+  final String icon;
+  final String category;
+  final String defaultUnit;
+
+  const IngredientOption({
+    required this.name,
+    required this.icon,
+    required this.category,
+    required this.defaultUnit,
+  });
+}
+
+/// Standard ingredient list used by the autocomplete field.
+const ingredientOptions = <IngredientOption>[
+  // Protein
+  IngredientOption(
+    name: 'Chicken',
+    icon: '🍗',
+    category: 'Protein',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Chicken breast',
+    icon: '🍗',
+    category: 'Protein',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Beef',
+    icon: '🥩',
+    category: 'Protein',
+    defaultUnit: 'kg',
+  ),
+  IngredientOption(
+    name: 'Lamb',
+    icon: '🍖',
+    category: 'Protein',
+    defaultUnit: 'kg',
+  ),
+  IngredientOption(
+    name: 'Egg',
+    icon: '🥚',
+    category: 'Protein',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Fish',
+    icon: '🐟',
+    category: 'Protein',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Tuna',
+    icon: '🐟',
+    category: 'Protein',
+    defaultUnit: 'can',
+  ),
+  IngredientOption(
+    name: 'Chickpeas',
+    icon: '🫘',
+    category: 'Protein',
+    defaultUnit: 'cup',
+  ),
+
+  // Vegetables
+  IngredientOption(
+    name: 'Tomato',
+    icon: '🍅',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Onion',
+    icon: '🧅',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Garlic',
+    icon: '🧄',
+    category: 'Vegetables',
+    defaultUnit: 'cloves',
+  ),
+  IngredientOption(
+    name: 'Potato',
+    icon: '🥔',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Carrot',
+    icon: '🥕',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Cabbage',
+    icon: '🥬',
+    category: 'Vegetables',
+    defaultUnit: 'head',
+  ),
+  IngredientOption(
+    name: 'Spinach',
+    icon: '🥬',
+    category: 'Vegetables',
+    defaultUnit: 'g',
+  ),
+  IngredientOption(
+    name: 'Lettuce',
+    icon: '🥬',
+    category: 'Vegetables',
+    defaultUnit: 'head',
+  ),
+  IngredientOption(
+    name: 'Romaine lettuce',
+    icon: '🥬',
+    category: 'Vegetables',
+    defaultUnit: 'head',
+  ),
+  IngredientOption(
+    name: 'Green pepper',
+    icon: '🫑',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Bell pepper',
+    icon: '🫑',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Green onion',
+    icon: '🌱',
+    category: 'Vegetables',
+    defaultUnit: 'pieces',
+  ),
+
+  // Grains / starches
+  IngredientOption(
+    name: 'Rice',
+    icon: '🍚',
+    category: 'Grains',
+    defaultUnit: 'cup',
+  ),
+  IngredientOption(
+    name: 'Pasta',
+    icon: '🍝',
+    category: 'Grains',
+    defaultUnit: 'g',
+  ),
+  IngredientOption(
+    name: 'Bread',
+    icon: '🍞',
+    category: 'Grains',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Ciabatta loaf',
+    icon: '🍞',
+    category: 'Grains',
+    defaultUnit: 'pieces',
+  ),
+  IngredientOption(
+    name: 'Flour',
+    icon: '🌾',
+    category: 'Grains',
+    defaultUnit: 'cup',
+  ),
+  IngredientOption(
+    name: 'Oats',
+    icon: '🌾',
+    category: 'Grains',
+    defaultUnit: 'cup',
+  ),
+
+  // Dairy
+  IngredientOption(
+    name: 'Milk',
+    icon: '🥛',
+    category: 'Dairy',
+    defaultUnit: 'ml',
+  ),
+  IngredientOption(
+    name: 'Butter',
+    icon: '🧈',
+    category: 'Dairy',
+    defaultUnit: 'tbsp',
+  ),
+  IngredientOption(
+    name: 'Cheese',
+    icon: '🧀',
+    category: 'Dairy',
+    defaultUnit: 'g',
+  ),
+  IngredientOption(
+    name: 'Parmesan cheese',
+    icon: '🧀',
+    category: 'Dairy',
+    defaultUnit: 'cup',
+  ),
+  IngredientOption(
+    name: 'Yogurt',
+    icon: '🥛',
+    category: 'Dairy',
+    defaultUnit: 'cup',
+  ),
+
+  // Pantry
+  IngredientOption(
+    name: 'Olive oil',
+    icon: '🫒',
+    category: 'Other',
+    defaultUnit: 'tbsp',
+  ),
+  IngredientOption(
+    name: 'Vegetable oil',
+    icon: '🫗',
+    category: 'Other',
+    defaultUnit: 'tbsp',
+  ),
+  IngredientOption(
+    name: 'Soy sauce',
+    icon: '🥢',
+    category: 'Other',
+    defaultUnit: 'tbsp',
+  ),
+  IngredientOption(
+    name: 'Salt',
+    icon: '🧂',
+    category: 'Other',
+    defaultUnit: 'tsp',
+  ),
+  IngredientOption(
+    name: 'Black pepper',
+    icon: '🌶️',
+    category: 'Other',
+    defaultUnit: 'tsp',
+  ),
+  IngredientOption(
+    name: 'Berbere',
+    icon: '🌶️',
+    category: 'Spices',
+    defaultUnit: 'tbsp',
+  ),
+];
+
 class KitchenNotifier extends StateNotifier<List<KitchenItem>> {
   KitchenNotifier() : super(_starterItems);
 
   static const _starterItems = <KitchenItem>[
-    KitchenItem(name: 'Egg', icon: '🥚', category: 'Protein', quantity: 6, unit: 'pcs'),
-    KitchenItem(name: 'Onion', icon: '🧅', category: 'Vegetables', quantity: 2, unit: 'pcs'),
-    KitchenItem(name: 'Garlic', icon: '🧄', category: 'Vegetables', quantity: 1, unit: 'head'),
-    KitchenItem(name: 'Rice', icon: '🍚', category: 'Grains', quantity: 1, unit: 'kg'),
+    KitchenItem(
+      name: 'Chicken',
+      icon: '🍗',
+      category: 'Protein',
+      quantity: 2,
+      unit: 'pieces',
+    ),
+    KitchenItem(
+      name: 'Egg',
+      icon: '🥚',
+      category: 'Protein',
+      quantity: 6,
+      unit: 'pieces',
+    ),
+    KitchenItem(
+      name: 'Tomato',
+      icon: '🍅',
+      category: 'Vegetables',
+      quantity: 3,
+      unit: 'pieces',
+    ),
+    KitchenItem(
+      name: 'Onion',
+      icon: '🧅',
+      category: 'Vegetables',
+      quantity: 2,
+      unit: 'pieces',
+    ),
+    KitchenItem(
+      name: 'Rice',
+      icon: '🍚',
+      category: 'Grains',
+      quantity: 2,
+      unit: 'cup',
+    ),
   ];
 
+  /// Add an ingredient to the kitchen.
+  ///
+  /// If the ingredient already exists, increase its quantity instead
+  /// of creating a duplicate item.
   void addItem(KitchenItem item) {
-    final existingIndex = state.indexWhere((i) => i.key == item.key);
-    if (existingIndex >= 0) {
-      final updated = [...state];
-      updated[existingIndex] = item;
-      state = updated;
-    } else {
+    final index = state.indexWhere(
+          (existing) =>
+      existing.name.toLowerCase() == item.name.toLowerCase(),
+    );
+
+    if (index == -1) {
       state = [...state, item];
+      return;
     }
+
+    final existing = state[index];
+
+    final updated = KitchenItem(
+      name: existing.name,
+      icon: existing.icon,
+      category: existing.category,
+      quantity: existing.quantity + item.quantity,
+      unit: existing.unit,
+    );
+
+    final newState = [...state];
+    newState[index] = updated;
+
+    state = newState;
   }
 
   void removeItem(String name) {
-    state = state.where((i) => i.key != name.toLowerCase().trim()).toList();
+    state = state
+        .where(
+          (item) => item.name.toLowerCase() != name.toLowerCase(),
+    )
+        .toList();
   }
 
-  Set<String> get keys => state.map((i) => i.key).toSet();
+  void clearKitchen() {
+    state = [];
+  }
 }
 
-final kitchenProvider = StateNotifierProvider<KitchenNotifier, List<KitchenItem>>(
+final kitchenProvider =
+StateNotifierProvider<KitchenNotifier, List<KitchenItem>>(
       (ref) => KitchenNotifier(),
 );
-
-/// Just the set of ingredient keys currently in the kitchen — handy for
-/// screens (like recipe detail) that only need fast lookups, not the full list.
-final kitchenProviderKeysProvider = Provider<Set<String>>((ref) {
-  return ref.watch(kitchenProvider).map((i) => i.key).toSet();
-});

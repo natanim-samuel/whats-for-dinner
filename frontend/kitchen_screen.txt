@@ -1,0 +1,235 @@
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/data/models.dart';
+import '../../../core/theme/app_theme.dart';
+import '../providers/kitchen_provider.dart';
+
+class KitchenScreen extends ConsumerWidget {
+  const KitchenScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(kitchenProvider);
+
+    final byCategory = <String, List<KitchenItem>>{};
+    for (final item in items) {
+      byCategory.putIfAbsent(item.category, () => []).add(item);
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Kitchen')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddIngredientSheet(context),
+        backgroundColor: AppColors.accent,
+        icon: const Icon(Icons.add, color: AppColors.textDark),
+        label: const Text('Add Ingredient', style: TextStyle(color: AppColors.textDark)),
+      ),
+      body: items.isEmpty
+          ? const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('ðŸ¥•', style: TextStyle(fontSize: 48)),
+              SizedBox(height: 12),
+              Text(
+                'Your kitchen is empty.\nAdd a few ingredients to get started.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textLightMuted),
+              ),
+            ],
+          ),
+        ),
+      )
+          : ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        children: byCategory.entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.key,
+                    style: const TextStyle(
+                        color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 8),
+                ...entry.value.map((item) => _IngredientTile(item: item)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _showAddIngredientSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _AddIngredientSheet(),
+    );
+  }
+}
+
+class _IngredientTile extends ConsumerWidget {
+  final KitchenItem item;
+  const _IngredientTile({required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.card,
+          child: Text(item.icon, style: const TextStyle(fontSize: 16)),
+        ),
+        title: Text(item.name, style: const TextStyle(color: AppColors.textLight)),
+        subtitle: Text('${item.quantity} ${item.unit}',
+            style: const TextStyle(color: AppColors.textLightMuted)),
+        trailing: IconButton(
+          icon: const Icon(Icons.close, color: AppColors.textLightMuted),
+          onPressed: () => ref.read(kitchenProvider.notifier).removeItem(item.name),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddIngredientSheet extends ConsumerStatefulWidget {
+  const _AddIngredientSheet();
+
+  @override
+  ConsumerState<_AddIngredientSheet> createState() => _AddIngredientSheetState();
+}
+
+class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
+  final _nameController = TextEditingController();
+  String _category = 'Vegetables';
+  double _quantity = 1;
+  String _unit = 'pieces';
+  String _icon = 'ðŸ¥•';
+
+  static const categories = ['Vegetables', 'Protein', 'Grains', 'Other'];
+  static const units = ['pieces', 'cup', 'g', 'kg', 'tbsp', 'tsp', 'lb', 'ml', 'head', 'cloves'];
+
+  static const quickAdd = {
+    'Tomato': 'ðŸ…', 'Onion': 'ðŸ§…', 'Garlic': 'ðŸ§„', 'Egg': 'ðŸ¥š','Salt':'ðŸ§‚',
+    'Rice': 'ðŸš',  'Olive oil': 'ðŸ«’','Chicken breast': 'ðŸ—', 'Pasta': 'ðŸ', 'Potato': 'ðŸ¥”',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.backgroundElevated,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Add Ingredient',
+              style: TextStyle(color: AppColors.textLight, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            style: const TextStyle(color: AppColors.textLight),
+            decoration: const InputDecoration(hintText: 'e.g. Tomato'),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickAdd.entries.map((entry) {
+              return ActionChip(
+                backgroundColor: AppColors.background,
+                label: Text('${entry.value} ${entry.key}', style: const TextStyle(color: AppColors.textLight)),
+                onPressed: () => setState(() {
+                  _nameController.text = entry.key;
+                  _icon = entry.value;
+                }),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _category,
+                  dropdownColor: AppColors.backgroundElevated,
+                  style: const TextStyle(color: AppColors.textLight),
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: categories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _category = v!),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _unit,
+                  dropdownColor: AppColors.backgroundElevated,
+                  style: const TextStyle(color: AppColors.textLight),
+                  decoration: const InputDecoration(labelText: 'Unit'),
+                  items: units
+                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _unit = v!),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text('Quantity', style: TextStyle(color: AppColors.textLight)),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline, color: AppColors.textLight),
+                onPressed: () => setState(() => _quantity = (_quantity - 1).clamp(1, 999)),
+              ),
+              Text(_quantity.toStringAsFixed(0),
+                  style: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.textLight),
+                onPressed: () => setState(() => _quantity += 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submit,
+              child: const Text('Add'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    ref.read(kitchenProvider.notifier).addItem(
+      KitchenItem(
+        name: name,
+        icon: _icon,
+        category: _category,
+        quantity: _quantity,
+        unit: _unit,
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+}
