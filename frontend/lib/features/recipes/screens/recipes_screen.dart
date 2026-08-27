@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/data/mock_recipes.dart';
 import '../../../core/data/models.dart';
 import '../../../core/theme/app_theme.dart';
+
 import '../../favorites/providers/favorites_provider.dart';
 import '../providers/recipe_provider.dart';
 import 'recipe_detail_screen.dart';
+
 
 class RecipesScreen extends ConsumerStatefulWidget {
   const RecipesScreen({super.key});
