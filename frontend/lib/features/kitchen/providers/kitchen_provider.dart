@@ -1,10 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/data/models.dart';
 
 /// Common ingredients that the user can select from.
-///
-/// Keeping the names standardized is important because recipe matching
-/// depends on ingredient names matching the recipe database.
 class IngredientOption {
   final String name;
   final String icon;
@@ -19,7 +20,7 @@ class IngredientOption {
   });
 }
 
-/// Standard ingredient list used by the autocomplete field.
+/// Standard ingredient list used by autocomplete.
 const ingredientOptions = <IngredientOption>[
   // Protein
   IngredientOption(
@@ -145,7 +146,7 @@ const ingredientOptions = <IngredientOption>[
     defaultUnit: 'pieces',
   ),
 
-  // Grains / starches
+  // Grains
   IngredientOption(
     name: 'Rice',
     icon: '🍚',
@@ -255,7 +256,63 @@ const ingredientOptions = <IngredientOption>[
 ];
 
 class KitchenNotifier extends StateNotifier<List<KitchenItem>> {
-  KitchenNotifier() : super(_starterItems);
+  static const _storageKey = 'kitchen_items';
+
+  KitchenNotifier() : super([]) {
+    _loadItems();
+  }
+
+  // --------------------------------------------------------------
+  // LOAD
+  // --------------------------------------------------------------
+
+  Future<void> _loadItems() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedItems = prefs.getStringList(_storageKey);
+
+    if (savedItems == null) {
+      // First launch only.
+      state = _starterItems;
+      await _saveItems();
+      return;
+    }
+
+    try {
+      state = savedItems
+          .map(
+            (jsonString) => KitchenItem.fromJson(
+          jsonDecode(jsonString) as Map<String, dynamic>,
+        ),
+      )
+          .toList();
+    } catch (_) {
+      state = [];
+    }
+  }
+
+  // --------------------------------------------------------------
+  // SAVE
+  // --------------------------------------------------------------
+
+  Future<void> _saveItems() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final encoded = state
+        .map(
+          (item) => jsonEncode(item.toJson()),
+    )
+        .toList();
+
+    await prefs.setStringList(
+      _storageKey,
+      encoded,
+    );
+  }
+
+  // --------------------------------------------------------------
+  // STARTER INGREDIENTS
+  // --------------------------------------------------------------
 
   static const _starterItems = <KitchenItem>[
     KitchenItem(
@@ -295,18 +352,20 @@ class KitchenNotifier extends StateNotifier<List<KitchenItem>> {
     ),
   ];
 
-  /// Add an ingredient to the kitchen.
-  ///
-  /// If the ingredient already exists, increase its quantity instead
-  /// of creating a duplicate item.
-  void addItem(KitchenItem item) {
+  // --------------------------------------------------------------
+  // ADD
+  // --------------------------------------------------------------
+
+  Future<void> addItem(KitchenItem item) async {
     final index = state.indexWhere(
           (existing) =>
-      existing.name.toLowerCase() == item.name.toLowerCase(),
+      existing.name.toLowerCase() ==
+          item.name.toLowerCase(),
     );
 
     if (index == -1) {
       state = [...state, item];
+      await _saveItems();
       return;
     }
 
@@ -324,18 +383,33 @@ class KitchenNotifier extends StateNotifier<List<KitchenItem>> {
     newState[index] = updated;
 
     state = newState;
+
+    await _saveItems();
   }
 
-  void removeItem(String name) {
+  // --------------------------------------------------------------
+  // REMOVE
+  // --------------------------------------------------------------
+
+  Future<void> removeItem(String name) async {
     state = state
         .where(
-          (item) => item.name.toLowerCase() != name.toLowerCase(),
+          (item) =>
+      item.name.toLowerCase() !=
+          name.toLowerCase(),
     )
         .toList();
+
+    await _saveItems();
   }
 
-  void clearKitchen() {
+  // --------------------------------------------------------------
+  // CLEAR
+  // --------------------------------------------------------------
+
+  Future<void> clearKitchen() async {
     state = [];
+    await _saveItems();
   }
 }
 

@@ -22,7 +22,6 @@ class KitchenScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My Kitchen'),
       ),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddIngredientSheet(context),
         backgroundColor: AppColors.accent,
@@ -30,7 +29,6 @@ class KitchenScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add Ingredient'),
       ),
-
       body: items.isEmpty
           ? const _EmptyKitchen()
           : ListView(
@@ -57,7 +55,6 @@ class KitchenScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-
                 ...entry.value.map(
                       (item) => _IngredientTile(
                     item: item,
@@ -75,6 +72,7 @@ class KitchenScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _AddIngredientSheet(),
     );
@@ -131,18 +129,15 @@ class _IngredientTile extends ConsumerWidget {
             style: const TextStyle(fontSize: 18),
           ),
         ),
-
         title: Text(
           item.name,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
-
         subtitle: Text(
           '${_formatQuantity(item.quantity)} ${item.unit}',
         ),
-
         trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
@@ -174,7 +169,7 @@ class _AddIngredientSheet extends ConsumerStatefulWidget {
 
 class _AddIngredientSheetState
     extends ConsumerState<_AddIngredientSheet> {
-  final _quantityController =
+  final TextEditingController _quantityController =
   TextEditingController(text: '1');
 
   IngredientOption? _selectedIngredient;
@@ -194,76 +189,88 @@ class _AddIngredientSheetState
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset =
-        MediaQuery.of(context).viewInsets.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(28),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(
+        bottom: keyboardHeight,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(28),
+          ),
         ),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + bottomInset,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.25),
-                  borderRadius:
-                  BorderRadius.circular(10),
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          keyboardDismissBehavior:
+          ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            20,
+          ),
+          child: Column(
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.25),
+                    borderRadius:
+                    BorderRadius.circular(10),
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            Text(
-              'Add Ingredient',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(
-                fontWeight: FontWeight.bold,
+              Text(
+                'Add Ingredient',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 6),
+              const SizedBox(height: 6),
 
-            Text(
-              'Start typing and select an ingredient.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium,
-            ),
+              Text(
+                'Start typing and select an ingredient.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium,
+              ),
 
-            const SizedBox(height: 20),
-
-            _buildIngredientAutocomplete(context),
-
-            if (_selectedIngredient != null) ...[
               const SizedBox(height: 20),
-              _buildSelectedIngredient(context),
-              const SizedBox(height: 20),
-              _buildQuantityField(context),
-              const SizedBox(height: 20),
-              _buildAddButton(context),
+
+              _buildIngredientAutocomplete(context),
+
+              if (_selectedIngredient != null) ...[
+                const SizedBox(height: 20),
+                _buildSelectedIngredient(context),
+                const SizedBox(height: 20),
+                _buildQuantityField(context),
+                const SizedBox(height: 20),
+                _buildAddButton(context),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -286,10 +293,9 @@ class _AddIngredientSheetState
         }
 
         return ingredientOptions.where(
-              (ingredient) =>
-              ingredient.name
-                  .toLowerCase()
-                  .contains(query),
+              (ingredient) => ingredient.name
+              .toLowerCase()
+              .contains(query),
         );
       },
 
@@ -308,26 +314,31 @@ class _AddIngredientSheetState
         return TextField(
           controller: controller,
           focusNode: focusNode,
+          textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             labelText: 'Ingredient',
-            hintText: 'e.g. chicken, tomato, rice...',
+            hintText:
+            'e.g. chicken, tomato, rice...',
             prefixIcon: const Icon(
               Icons.search,
             ),
-            suffixIcon: controller.text.isNotEmpty
+            suffixIcon:
+            controller.text.isNotEmpty
                 ? IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(
+                Icons.clear,
+              ),
               onPressed: () {
                 controller.clear();
 
                 setState(() {
-                  _selectedIngredient = null;
+                  _selectedIngredient =
+                  null;
                 });
               },
             )
                 : null,
           ),
-
           onChanged: (_) {
             setState(() {});
           },
@@ -348,7 +359,7 @@ class _AddIngredientSheetState
             clipBehavior: Clip.antiAlias,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxHeight: 280,
+                maxHeight: 240,
                 maxWidth: 500,
               ),
               child: ListView.builder(
@@ -368,16 +379,13 @@ class _AddIngredientSheetState
                         option.icon,
                       ),
                     ),
-
                     title: Text(
                       option.name,
                     ),
-
                     subtitle: Text(
                       '${option.category} • '
                           '${option.defaultUnit}',
                     ),
-
                     onTap: () {
                       onSelected(option);
                     },
@@ -394,8 +402,7 @@ class _AddIngredientSheetState
   Widget _buildSelectedIngredient(
       BuildContext context,
       ) {
-    final ingredient =
-    _selectedIngredient!;
+    final ingredient = _selectedIngredient!;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -428,9 +435,7 @@ class _AddIngredientSheetState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   ingredient.category,
                 ),
@@ -449,8 +454,7 @@ class _AddIngredientSheetState
   Widget _buildQuantityField(
       BuildContext context,
       ) {
-    final ingredient =
-    _selectedIngredient!;
+    final ingredient = _selectedIngredient!;
 
     return Row(
       children: [
@@ -461,7 +465,8 @@ class _AddIngredientSheetState
             const TextInputType.numberWithOptions(
               decimal: true,
             ),
-            decoration: const InputDecoration(
+            decoration:
+            const InputDecoration(
               labelText: 'Quantity',
               prefixIcon:
               Icon(Icons.numbers),
@@ -472,7 +477,8 @@ class _AddIngredientSheetState
         const SizedBox(width: 12),
 
         Container(
-          padding: const EdgeInsets.symmetric(
+          padding:
+          const EdgeInsets.symmetric(
             horizontal: 18,
             vertical: 17,
           ),
@@ -519,7 +525,6 @@ class _AddIngredientSheetState
                 ),
               ),
             );
-
             return;
           }
 

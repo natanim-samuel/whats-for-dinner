@@ -1,7 +1,7 @@
 /// One ingredient a recipe needs.
 class RecipeIngredient {
   final String name;
-  final String icon; // emoji shown in the round icon chip
+  final String icon;
   final num quantity;
   final String unit;
   final bool required;
@@ -15,8 +15,7 @@ class RecipeIngredient {
   });
 }
 
-/// A full recipe, including everything needed for both the results list
-/// and the detail screen. All data lives in memory — no backend.
+/// A full recipe.
 class Recipe {
   final int id;
   final String name;
@@ -47,7 +46,7 @@ class Recipe {
 
 /// One ingredient sitting in the user's kitchen.
 class KitchenItem {
-  final String name; // matched against Recipe ingredient names, case-insensitive
+  final String name;
   final String icon;
   final String category;
   final num quantity;
@@ -62,6 +61,34 @@ class KitchenItem {
   });
 
   String get key => name.toLowerCase().trim();
+
+  // ------------------------------------------------------------
+  // SAVE KITCHEN ITEM
+  // ------------------------------------------------------------
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'icon': icon,
+      'category': category,
+      'quantity': quantity,
+      'unit': unit,
+    };
+  }
+
+  // ------------------------------------------------------------
+  // LOAD KITCHEN ITEM
+  // ------------------------------------------------------------
+
+  factory KitchenItem.fromJson(Map<String, dynamic> json) {
+    return KitchenItem(
+      name: json['name'] as String,
+      icon: json['icon'] as String,
+      category: json['category'] as String,
+      quantity: json['quantity'] as num,
+      unit: json['unit'] as String,
+    );
+  }
 }
 
 /// Result of matching one recipe against the current kitchen.

@@ -1,20 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Stores the IDs of recipes bookmarked by the user.
-///
-/// This is currently kept in memory.
-/// Later we can connect this to SharedPreferences or a backend
-/// so bookmarks survive app restarts.
+const String _favoritesKey = 'favorite_recipe_ids';
+
 class FavoritesNotifier extends StateNotifier<Set<int>> {
-  FavoritesNotifier() : super(<int>{});
-
-  /// Check whether a recipe is bookmarked.
-  bool isFavorite(int recipeId) {
-    return state.contains(recipeId);
+  FavoritesNotifier() : super(<int>{}) {
+    _loadFavorites();
   }
 
-  /// Toggle bookmark status.
-  void toggleFavorite(int recipeId) {
+  Future<void> _loadFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedIds = prefs.getStringList(_favoritesKey) ?? <String>[];
+
+    state = savedIds
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+  }
+
+  Future<void> toggleFavorite(int recipeId) async {
     final updated = Set<int>.from(state);
 
     if (updated.contains(recipeId)) {
@@ -23,28 +28,28 @@ class FavoritesNotifier extends StateNotifier<Set<int>> {
       updated.add(recipeId);
     }
 
+    // Update UI immediately.
     state = updated;
+
+    // Save permanently.
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setStringList(
+      _favoritesKey,
+      updated.map((id) => id.toString()).toList(),
+    );
   }
 
-  /// Add a recipe to bookmarks.
-  void addFavorite(int recipeId) {
-    if (!state.contains(recipeId)) {
-      state = {...state, recipeId};
-    }
+  bool isFavorite(int recipeId) {
+    return state.contains(recipeId);
   }
 
-  /// Remove a recipe from bookmarks.
-  void removeFavorite(int recipeId) {
-    if (state.contains(recipeId)) {
-      final updated = Set<int>.from(state);
-      updated.remove(recipeId);
-      state = updated;
-    }
-  }
-
-  /// Remove all bookmarks.
-  void clearFavorites() {
+  Future<void> clearFavorites() async {
     state = <int>{};
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove(_favoritesKey);
   }
 }
 
@@ -53,7 +58,6 @@ StateNotifierProvider<FavoritesNotifier, Set<int>>(
       (ref) => FavoritesNotifier(),
 );
 
-/// Number of bookmarked recipes.
 final favoriteCountProvider = Provider<int>((ref) {
   return ref.watch(favoritesProvider).length;
 });
